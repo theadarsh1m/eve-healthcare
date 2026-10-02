@@ -1,7 +1,7 @@
 const dotenv = require('dotenv');
 
 // Load environment variables from .env file
-dotenv.config();
+dotenv.config({ quiet: true });
 
 const env = {
   NODE_ENV: process.env.NODE_ENV || 'development',
