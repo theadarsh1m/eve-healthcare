@@ -40,11 +40,6 @@ eve-healthcare/
 └── README.md
 ```
 
----
-
-## Phase Implementations & Documentation
-- [Phase 1: Project Foundation](./docs/PHASE_1_README.md)
-- [Phase 2: Database & Data Models](./docs/PHASE_2_README.md)
 
 ---
 
