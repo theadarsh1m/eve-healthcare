@@ -6,6 +6,7 @@ const centreRoutes = require('./routes/centre.routes');
 const testRoutes = require('./routes/test.routes');
 const bookingRoutes = require('./routes/booking.routes');
 const paymentRoutes = require('./routes/payment.routes');
+const { swaggerUi, swaggerSpec } = require('./swagger');
 const { notFoundHandler, errorHandler } = require('./middlewares/error.middleware');
 
 const app = express();
@@ -13,6 +14,13 @@ const app = express();
 // Global Middlewares
 app.use(cors());
 app.use(express.json());
+
+// Swagger OpenAPI Documentation
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+app.get('/api-docs.json', (req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.send(swaggerSpec);
+});
 
 // API Routes
 app.use('/api/health', healthRoutes);
