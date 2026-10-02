@@ -1,0 +1,31 @@
+{
+  "name": "eve-healthcare",
+  "version": "1.0.0",
+  "description": "Backend service for diagnostic test bookings and simulated payments - EVE Healthcare",
+  "main": "src/server.js",
+  "scripts": {
+    "dev": "nodemon src/server.js",
+    "start": "node src/server.js",
+    "prisma:generate": "prisma generate",
+    "prisma:validate": "prisma validate"
+  },
+  "keywords": [
+    "eve-healthcare",
+    "express",
+    "prisma",
+    "postgresql",
+    "backend"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@prisma/client": "^6.19.3",
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.5",
+    "express": "^5.2.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14",
+    "prisma": "^6.19.3"
+  }
+}
