@@ -14,9 +14,6 @@ Backend service for diagnostic test bookings and simulated payments for the **EV
 ## Project Structure
 ```
 eve-healthcare/
-├── docs/
-│   ├── PHASE_1_README.md      # Phase 1 Documentation (Foundation & Architecture)
-│   └── PHASE_2_README.md      # Phase 2 Documentation (Database & Data Models)
 ├── prisma/
 │   ├── migrations/            # SQL migration history
 │   └── schema.prisma          # Prisma schema definition

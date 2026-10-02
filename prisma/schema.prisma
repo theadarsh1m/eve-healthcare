@@ -114,3 +114,14 @@ model Payment {
   @@index([status])
   @@map("payments")
 }
+
+model PaymentEvent {
+  id        String        @id @default(uuid())
+  eventId   String        @unique
+  paymentId String
+  status    PaymentStatus
+  createdAt DateTime      @default(now())
+
+  @@index([paymentId])
+  @@map("payment_events")
+}

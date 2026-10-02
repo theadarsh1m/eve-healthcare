@@ -83,6 +83,129 @@ const processPayment = async (req, res, next) => {
   }
 };
 
+/**
+ * Handle simulated payment provider webhook with idempotency
+ * POST /api/payments/webhook (Public / Provider-to-server)
+ */
+const handleWebhook = async (req, res, next) => {
+  try {
+    const { eventId, paymentId, bookingId, status } = req.body;
+
+    // 1. Application-level idempotency check: Has this event already been processed?
+    const existingEvent = await prisma.paymentEvent.findUnique({
+      where: { eventId },
+    });
+
+    if (existingEvent) {
+      return res.status(200).json({
+        success: true,
+        message: 'Webhook already processed',
+      });
+    }
+
+    // 2. Process webhook event in an atomic database transaction
+    await prisma.$transaction(async (tx) => {
+      // Find the payment by ID or providerPaymentId
+      const payment = await tx.payment.findFirst({
+        where: {
+          OR: [
+            { id: paymentId },
+            { providerPaymentId: paymentId },
+          ],
+        },
+      });
+
+      if (!payment) {
+        const error = new Error('Payment not found');
+        error.statusCode = 404;
+        throw error;
+      }
+
+      // Verify booking association
+      if (payment.bookingId !== bookingId) {
+        const error = new Error('Booking ID does not match payment record');
+        error.statusCode = 400;
+        throw error;
+      }
+
+      const booking = await tx.booking.findUnique({
+        where: { id: payment.bookingId },
+      });
+
+      if (!booking) {
+        const error = new Error('Booking not found');
+        error.statusCode = 404;
+        throw error;
+      }
+
+      // Guard against invalid state transitions
+      if (booking.status === 'CANCELLED') {
+        const error = new Error('Cannot process webhook for a cancelled booking');
+        error.statusCode = 400;
+        throw error;
+      }
+
+      if (status === 'SUCCESS' && booking.status === 'FAILED') {
+        const error = new Error('Cannot confirm an already failed booking');
+        error.statusCode = 400;
+        throw error;
+      }
+
+      if (status === 'FAILED' && booking.status === 'CONFIRMED') {
+        const error = new Error('Cannot fail an already confirmed booking');
+        error.statusCode = 400;
+        throw error;
+      }
+
+      // Record the PaymentEvent (database UNIQUE constraint on eventId prevents race condition duplicates)
+      await tx.paymentEvent.create({
+        data: {
+          eventId,
+          paymentId: payment.id,
+          status,
+        },
+      });
+
+      // Update Payment and Booking statuses
+      const newPaymentStatus = status === 'SUCCESS' ? 'SUCCESS' : 'FAILED';
+      const newBookingStatus = status === 'SUCCESS' ? 'CONFIRMED' : 'FAILED';
+
+      await tx.payment.update({
+        where: { id: payment.id },
+        data: { status: newPaymentStatus },
+      });
+
+      await tx.booking.update({
+        where: { id: booking.id },
+        data: { status: newBookingStatus },
+      });
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Webhook processed successfully',
+    });
+  } catch (error) {
+    // Database unique constraint violation on eventId (Prisma P2002) - concurrent duplicate request
+    if (error.code === 'P2002') {
+      return res.status(200).json({
+        success: true,
+        message: 'Webhook already processed',
+      });
+    }
+
+    if (error.statusCode) {
+      return res.status(error.statusCode).json({
+        success: false,
+        message: error.message,
+      });
+    }
+
+    next(error);
+  }
+};
+
 module.exports = {
   processPayment,
+  handleWebhook,
 };
